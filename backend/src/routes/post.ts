@@ -1,4 +1,4 @@
-
+import { createPostInput, updatePostInput } from "@arujgarg/post-your-articles-common";
 import { PrismaClient } from "@prisma/client/edge";
 import { withAccelerate } from "@prisma/extension-accelerate";
 import { Hono } from "hono";
@@ -18,10 +18,17 @@ export const postRouter = new Hono<{
 postRouter.use('/*', async (c, next) => {
         const authHeader = c.req.header("Authorization") || "";
         const user = await verify(authHeader, c.env.JWT_SECRET) as{ id: string}
-        if(user){
-            c.set("userId", user.id)
-            await next();
-        } else {
+        try {
+            if(user){
+                c.set("userId", user.id)
+                await next();
+            } else {
+                c.status(403);
+                return c.json({
+                    message: "you are not logged in"
+                })
+            }
+        } catch (error) {
             c.status(403);
             return c.json({
                 message: "you are not logged in"
@@ -36,6 +43,13 @@ postRouter.post('/', async (c) => {
 	}).$extends(withAccelerate());
 
 	const body = await c.req.json();
+    const { success } = createPostInput.safeParse(body);
+    if(!success){
+      c.status(411);
+      return c.json({
+        message: "Inputs not correct"
+      })
+    }
 	const post = await prisma.post.create({
 		data: {
 			title: body.title,
@@ -52,6 +66,13 @@ postRouter.post('/', async (c) => {
 
 postRouter.put('/', async (c) => {
     const body = await c.req.json();
+    const { success } = updatePostInput.safeParse(body);
+    if(!success){
+      c.status(411);
+      return c.json({
+        message: "Inputs not correct"
+      })
+    }
     const prisma = new PrismaClient({
     datasourceUrl: c.env.DATABASE_URL,
     }).$extends(withAccelerate())
