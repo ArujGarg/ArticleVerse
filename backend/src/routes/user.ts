@@ -19,11 +19,13 @@ userRouter.post('/signup', async (c) => {
   }).$extends(withAccelerate())
 
   const body = await c.req.json();
+  console.log(body);
   const { success } = signupInput.safeParse(body);
+  console.log(success)
   if(!success){
     c.status(411);
     return c.json({
-      message: "Inputs are incorrect"
+      message: "Inputs are incorrect",
     })
   }
   
@@ -53,11 +55,16 @@ userRouter.post('/signin', async (c) => {
 
   try {
     const body = await c.req.json();
-    const { success } = signinInput.safeParse(body);
-    if(!success){
+    const result = signinInput.safeParse(body);
+    console.log(signinInput)
+    console.log(body)
+
+    console.log(result)
+    if(!result.success){
       c.status(411);
       return c.json({
-        message: "Inputs not correct"
+        message: "Inputs not correct",
+        error: result.error.issues
       })
     }
     const user = await prisma.user.findFirst({
